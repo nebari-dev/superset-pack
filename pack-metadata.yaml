@@ -85,6 +85,6 @@ scope:
 links:
 #   Extended documentation (NOT the README - that is auto-linked from the
 #   pack name column).
-  docs: https://github.com/nebari-dev/nebari-superset-pack/blob/v0.3.1/README.md
+  docs: https://github.com/nebari-dev/nebari-superset-pack/blob/v0.4.0/README.md
 #   Recorded or live demo URL.
 #   demo: https://example.com/demos/my-pack
