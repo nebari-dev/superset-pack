@@ -1,6 +1,5 @@
 # Helm
 chart/charts/
-chart/Chart.lock
 
 # Docs (Docusaurus)
 docs/node_modules/
