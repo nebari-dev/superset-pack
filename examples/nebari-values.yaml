@@ -37,9 +37,6 @@ superset:
       }
       WTF_CSRF_ENABLED = True
       WTF_CSRF_TIME_LIMIT = None
-      FEATURE_FLAGS = {
-          "DYNAMIC_PLUGINS": True,
-      }
 
     oauth_config: |
       import os

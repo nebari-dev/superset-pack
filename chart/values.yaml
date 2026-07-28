@@ -112,10 +112,6 @@ superset:
       WTF_CSRF_ENABLED = True
       WTF_CSRF_TIME_LIMIT = None
 
-      FEATURE_FLAGS = {
-          "DYNAMIC_PLUGINS": True,
-      }
-
   # -- The chart-managed secret key is automatically included when secretKey.create is true.
   envFromSecrets:
     - '{{ .Release.Name }}-secret-key'

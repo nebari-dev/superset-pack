@@ -25,9 +25,6 @@ superset:
       }
       WTF_CSRF_ENABLED = True
       WTF_CSRF_TIME_LIMIT = None
-      FEATURE_FLAGS = {
-          "DYNAMIC_PLUGINS": True,
-      }
 
   # -- Generate a secret key: openssl rand -base64 42
   extraSecretEnv:
