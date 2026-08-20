@@ -1,6 +1,6 @@
 ---
 title: Introduction
-description: Documentation for the Nebari Superset Pack - deploy Apache Superset on Nebari with NebariApp routing, TLS, and gateway authentication.
+description: "Apache Superset dashboards and SQL exploration with Keycloak OAuth and NebariApp routing. Also installs standalone on non-Nebari clusters."
 ---
 
 The Nebari Superset Pack wraps the upstream

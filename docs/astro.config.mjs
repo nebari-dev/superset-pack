@@ -21,7 +21,7 @@ export default defineConfig({
   integrations: [
     starlight({
       title: 'Nebari Superset Pack',
-      description: 'Deploy Apache Superset on Nebari with NebariApp routing, TLS, and gateway authentication.',
+      description: 'Apache Superset dashboards and SQL exploration with Keycloak OAuth and NebariApp routing. Also installs standalone on non-Nebari clusters.',
       // Shared Nebari identity (brand colors, fonts, logo, favicon, footer, and
       // GitHub social link) comes from the @nebari/starlight theme plugin. On the
       // portal the header logo returns users to the pack catalog.
