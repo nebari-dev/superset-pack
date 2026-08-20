@@ -56,7 +56,7 @@ make login work. See [Keycloak OAuth](/oauth/).
 | Value | Default | Purpose |
 |---|---|---|
 | `secretKey.create` | `true` | Generate and manage the `SUPERSET_SECRET_KEY` Secret. |
-| `secretKey.secretName` | `""` → `<release>-secret-key` | Override the Secret name. |
+| `secretKey.secretName` | `""` → `<release>-secret-key` | Override the Secret name. Read only when `create` is `true`; it is a no-op under `create: false`, where you override `superset.envFromSecrets` instead. |
 
 :::caution[Set `create: false` under Argo CD]
 The chart preserves the key across upgrades with Helm's `lookup`, which Argo CD's
@@ -82,8 +82,8 @@ set either, confirm `nebariapp.service.name` still points at a service that exis
 | `superset.service.type` / `.port` | `ClusterIP` / `8088` | Routing is the `NebariApp`'s job. |
 | `superset.configOverrides.proxy_fix` | `ENABLE_PROXY_FIX`, `PROXY_FIX_CONFIG`, CSRF settings | Superset sits behind a proxy; without it, redirects and absolute URLs use the pod's own address. `WTF_CSRF_TIME_LIMIT = None` stops long-lived sessions from failing CSRF. |
 | `superset.envFromSecrets` | `['{{ .Release.Name }}-secret-key']` | Injects the managed key. |
-| `superset.postgresql.image.repository` | `bitnamilegacy/postgresql` | Upstream defaults point at removed Docker Hub tags. |
-| `superset.redis.image.repository` | `bitnamilegacy/redis` | Same. |
+| `superset.postgresql.image.repository` | `bitnamilegacy/postgresql` | Pins the legacy mirror, since Bitnami removed the original tags. Upstream 0.17.2 already defaults to this, so the override is a restatement. |
+| `superset.redis.image.repository` | `bitnamilegacy/redis` | Same, and likewise already the upstream 0.17.2 default. |
 | `superset.bootstrapScript` | installs `authlib` and `.[postgres]` | Required by the OAuth config and the PostgreSQL driver. |
 
 :::caution[`bootstrapScript` is replaced wholesale, not merged]

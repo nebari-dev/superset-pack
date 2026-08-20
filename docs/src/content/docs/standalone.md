@@ -9,12 +9,17 @@ chart plus a managed secret key and working image defaults.
 
 ## Install
 
+The values file lives in the repository, not in the published chart, so fetch it first.
+`-O` overwrites any file of that name in the current directory:
+
 ```bash
 helm repo add nebari-superset https://nebari-dev.github.io/helm-repository
 helm repo update
 
+curl -fsSLO https://raw.githubusercontent.com/nebari-dev/superset-pack/main/examples/standalone-values.yaml
+
 helm upgrade --install superset nebari-superset/nebari-superset \
-  -f examples/standalone-values.yaml \
+  -f standalone-values.yaml \
   -n superset --create-namespace
 ```
 
@@ -50,18 +55,25 @@ superset:
     port: 8088
 ```
 
-:::caution[Change the secret key before installing]
-The example ships a literal placeholder. Generate a real one:
+:::caution[The example's `extraSecretEnv` key is ignored at default settings]
+The example sets `extraSecretEnv.SUPERSET_SECRET_KEY`, but the chart's own
+`secretKey.create` defaults to `true` and produces a Secret for the same variable. Both
+land in the container's `envFrom`, with the chart-managed `superset-secret-key` listed
+second, and Kubernetes gives the last source precedence. So editing the placeholder changes
+nothing while `create` stays `true`: Superset uses a generated 64-character key instead.
 
-```bash
-openssl rand -base64 42
-```
+Pick one:
 
-The chart's own `secretKey.create` (default `true`) also produces a Secret. Setting
-`extraSecretEnv.SUPERSET_SECRET_KEY` as the example does gives Superset two sources for the
-same variable — pick one. Either keep the chart-managed Secret and drop the
-`extraSecretEnv` line, or set `secretKey.create: false` and keep the explicit value. See
-[Secret key](/secret-key/).
+- **Keep the chart-managed Secret** and delete the `extraSecretEnv` line. A random key,
+  preserved across `helm upgrade`, nothing to rotate by hand. Simpler on plain Helm.
+- **Set `secretKey.create: false`** and supply your own. `extraSecretEnv` becomes the live
+  source, so replace the placeholder:
+
+  ```bash
+  openssl rand -base64 42
+  ```
+
+  Required under Argo CD for the reason in [Secret key](/secret-key/).
 :::
 
 ## Access

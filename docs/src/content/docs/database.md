@@ -26,8 +26,11 @@ superset:
       repository: bitnamilegacy/redis
 ```
 
-The upstream chart's defaults point at Bitnami image tags that were removed from Docker
-Hub, so a stock install fails to pull. `bitnamilegacy/*` mirrors retain the older versions.
+Bitnami removed the original image tags from Docker Hub, and the `bitnamilegacy/*` mirrors
+retain the older versions. Upstream chart 0.17.2 already defaults to those mirrors on its
+own, at `values.yaml` `postgresql.image.repository` and `redis.image.repository`, so the
+overrides in this pack's `values.yaml` restate the upstream default rather than correct it.
+They are harmless, and they matter only if a future subchart bump changes those defaults.
 
 :::caution[Legacy mirrors are a stopgap]
 They are not the ideal long-term base for a production metadata store. For anything
@@ -103,7 +106,7 @@ Two things to know about restoring:
   needs the init job's migrations to run; the reverse does not work at all.
 
 On a Nebari cluster with
-[longhorn-backup-pack](https://packs.nebari.dev/longhorn-backup-pack/), the PostgreSQL PVC
+[longhorn-backup-pack](https://github.com/nebari-dev/longhorn-backup-pack), the PostgreSQL PVC
 is covered by the cluster-wide schedule if it sits on the default StorageClass. Confirm
 rather than assume:
 

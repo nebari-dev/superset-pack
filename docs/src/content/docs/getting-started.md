@@ -15,16 +15,22 @@ No Nebari platform? Go to [Standalone deployment](/standalone/).
 
 ## Install on a Nebari cluster
 
+The values files live in the repository, not in the published chart, so fetch the one you
+want first. `-O` overwrites any file of that name in the current directory, so once you have
+edited your copy, do not re-run the fetch:
+
 ```bash
 helm repo add nebari-superset https://nebari-dev.github.io/helm-repository
 helm repo update
+
+curl -fsSLO https://raw.githubusercontent.com/nebari-dev/superset-pack/main/examples/nebari-values.yaml
 
 kubectl create namespace superset
 kubectl label namespace superset nebari.dev/managed=true --overwrite
 
 helm upgrade --install superset nebari-superset/nebari-superset \
-  -f examples/nebari-values.yaml \
-  -n superset --create-namespace
+  -f nebari-values.yaml \
+  -n superset
 ```
 
 The namespace label is not optional — the operator ignores `NebariApp` resources in
@@ -66,7 +72,7 @@ nebariapp:
 | `superset-worker` | upstream chart | Celery worker for async queries |
 | `superset-init-db` | upstream chart | Job: schema migration and admin bootstrap |
 | `superset-postgresql` | upstream chart | Metadata store, when bundled |
-| `superset-redis` | upstream chart | Cache and Celery broker |
+| `superset-redis-master` | upstream chart | Cache and Celery broker. Superset connects via the `superset-redis-headless` Service, not this one. |
 | `<release>-secret-key` | this chart | `SUPERSET_SECRET_KEY` |
 | `<release>-nebari-superset` | this chart | `NebariApp` |
 

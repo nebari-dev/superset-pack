@@ -68,9 +68,26 @@ superset:
 
 :::caution[The secret name embeds your release name]
 It is `<release>-nebari-superset-oidc-client`, so a release named `superset` gives
-`superset-nebari-superset-oidc-client`. The examples hardcode that value — update it if you
-install under a different release name, or the pods start with empty OAuth credentials and
-the login fails with an opaque provider error.
+`superset-nebari-superset-oidc-client`. The examples hardcode that value, so update it if
+you install under a different release name.
+
+Getting it wrong does not produce a login error, because `client-id` and `client-secret`
+are not marked `optional`: the `superset`, `superset-worker`, and `superset-init-db`
+containers never start at all. They sit in `Waiting` with reason
+`CreateContainerConfigError`. The init containers only read `superset-env`, so they pass,
+which makes the pod look like it cleared the database wait before stalling.
+
+```bash
+kubectl -n superset get pods
+```
+
+The reason is in the container state, and the detail naming the missing secret or key is in
+the events rather than the state block:
+
+```bash
+kubectl -n superset get pods -o jsonpath='{range .items[*]}{.metadata.name}{"\t"}{.status.containerStatuses[*].state.waiting.reason}{"\n"}{end}'
+kubectl -n superset get events --field-selector reason=Failed
+```
 :::
 
 Confirm it exists before debugging anything else:
@@ -167,12 +184,18 @@ kubectl -n superset logs deploy/superset | grep "Keycloak userinfo"
 The example security manager logs the full userinfo payload at info level, which shows
 exactly which claim is present and what it contains.
 
+That payload includes the user's email and name, on every login, in plain pod logs. It is a
+debugging aid rather than a setting to leave on: drop the `logger.info` line from
+`oauth_config` once role mapping works, or lower it to `debug`.
+
 ## Troubleshooting
 
 | Symptom | Likely cause |
 |---|---|
 | Redirect loop | `redirectURI` does not match Flask-AppBuilder's callback path, or the client's registered redirect URI is stale. |
-| "Invalid client" from Keycloak | The `extraEnvRaw` secret name does not match the actual secret. |
+| Pod stuck in `CreateContainerConfigError` | The `extraEnvRaw` secret name or key does not match the actual secret. `client-id` and `client-secret` are not optional, so the container cannot start. |
+| "Invalid client" from Keycloak | The secret exists but its `client-id` or `client-secret` is stale or empty, usually after the Keycloak client was re-provisioned or its secret rotated. |
+| Login fails with an opaque Authlib error | `issuer-url` is missing from the secret, or present but empty. Missing is tolerated because it is the one key marked `optional: true`; either way the pod starts and `server_metadata_url` falls back to `''`. |
 | Every user is `Gamma` | The `roles` claim is missing — scope or client mapper — or the group names do not match `AUTH_ROLES_MAPPING`. |
 | Double login prompt | `enforceAtGateway` got set to `true`; check for a `SecurityPolicy`. |
 | Login succeeds, then 500 | Often a `SUPERSET_SECRET_KEY` rotation — see [Secret key](/secret-key/). |

@@ -67,9 +67,11 @@ secretKey:
   create: false
 ```
 
-The upstream chart still reads `<release>-secret-key` through `envFromSecrets`, so name the
-Secret to match, or set `secretKey.secretName` and reference that name in
-`superset.envFromSecrets`.
+The upstream chart still reads `<release>-secret-key` through `envFromSecrets`, so the
+simplest path is to name your Secret to match. To use a different name, override
+`superset.envFromSecrets` with it. Note that `secretKey.secretName` will not do this for
+you: the chart reads it only inside the `secretKey.create` branch, so with `create: false`
+it has no effect.
 
 **3. Migrating an existing deployment.** If you are switching from `create: true` with a
 live key, annotate the Secret first so Argo CD does not prune it as extraneous:

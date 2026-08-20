@@ -6,7 +6,10 @@ description: Helm and Argo CD, the routing block, gateway selection, and the lan
 ## The NebariApp
 
 With `nebariapp.enabled: true` the chart renders a `NebariApp` that the operator reconciles
-into an HTTPRoute, a TLS certificate, and — when auth is on — a Keycloak OIDC client.
+into an HTTPRoute, a TLS certificate, and, when auth is on, a Keycloak OIDC client. The
+certificate needs the operator to be running with a cluster issuer configured; without one
+it reports `TLSReady: False` with reason `ClusterIssuerNotConfigured` and falls back to the
+shared gateway listener.
 
 ```yaml
 nebariapp:
@@ -37,13 +40,18 @@ The chart's default leaves `routing` commented out, and the operator treats its 
 > The `routing` section must be included for the operator to create HTTPRoutes and TLS
 > certificates. Without it, no route or certificate will be provisioned.
 
-This fails quietly. `kubectl get nebariapp` looks fine; there is simply no HTTPRoute and no
-Certificate to find. If the hostname does not resolve to Superset, check for those two
-objects before anything else:
+This fails quietly at the surface. `kubectl get nebariapp` looks fine, the `Ready` condition
+is still `True`, and there is simply no HTTPRoute and no Certificate to find. But the
+operator does record the reason in the conditions, so ask it directly:
 
 ```bash
+kubectl -n superset get nebariapp -o json \
+  | jq '.items[] | {name: .metadata.name, conditions: .status.conditions}'
 kubectl -n superset get httproute,certificate
 ```
+
+`RoutingReady: False`, reason `RoutingNotConfigured`, is the operator saying the block is
+missing. Check that before the hostname or DNS.
 
 :::caution[`examples/nebari-values.yaml` omits the routing block]
 `examples/argocd-app.yaml` includes it. Copy the block from there when starting from the
@@ -75,8 +83,8 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://github.com/nebari-dev/nebari-superset-pack
-    targetRevision: v0.3.0
+    repoURL: https://github.com/nebari-dev/superset-pack
+    targetRevision: v0.4.0
     path: chart
     helm:
       values: |
@@ -128,9 +136,13 @@ Two other things in that manifest are worth naming:
 - **`SkipDryRunOnMissingResource=true`** lets the first sync proceed before the `NebariApp`
   CRD is registered, which matters when the operator is installed by the same bootstrap.
 
-The example pins `targetRevision: v0.3.0` and sources `path: chart` from git. Pointing at
-the published Helm repository instead is equally valid; either way, keep the revision
-pinned.
+The manifest sources `path: chart` from git at a pinned `targetRevision`. Pointing at the
+published Helm repository instead is equally valid; either way, keep the revision pinned,
+and check the [releases](https://github.com/nebari-dev/superset-pack/releases) for the
+current tag rather than copying the one above. `examples/argocd-app.yaml` in the repository
+is behind on both counts: it still pins `v0.3.0`, which predates the Superset 6.1.0 upgrade,
+and its `repoURL` still uses the pre-rename `nebari-superset-pack`, which only resolves
+because GitHub redirects it.
 
 ## Keycloak groups
 

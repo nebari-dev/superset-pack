@@ -21,14 +21,41 @@ make up-standalone  # kind + Superset only
 make down           # delete the cluster
 ```
 
-`make up` finishes by printing the URL — `https://superset.localhost` by default — and the
+`make up` finishes by printing the URL, `https://superset.localhost` by default, and the
 Keycloak credentials, `admin` / `nebari-admin`.
+
+:::caution[`make up` does not set `nebariapp.routing`, so that URL does not resolve]
+The `deploy` target sets `nebariapp.enabled`, `hostname`, and `auth.enabled`, and no
+routing keys. Without them the operator creates no HTTPRoute and no certificate, per
+[Deploying on Nebari](/deployment/#routing-is-not-optional), so the dev stack exercises the
+whole `NebariApp` path except routing.
+
+Adding the routing flags to the `helm upgrade` in `dev/Makefile`'s `deploy` target gets you
+an HTTPRoute, though not a valid certificate (see
+[below](#what-local-development-cannot-tell-you)):
+
+```
+	--set nebariapp.routing.tls.enabled=true \
+	--set 'nebariapp.routing.routes[0].pathPrefix=/' \
+	--set 'nebariapp.routing.routes[0].pathType=PathPrefix' \
+```
+
+Keep the trailing backslash on the last line: the recipe continues with the
+`superset.bootstrapScript` override and `--wait`.
+
+For a working local loop, use `kubectl port-forward svc/superset 8088:8088 -n superset` and
+ignore the printed URL.
+:::
 
 `make up-standalone` skips the platform entirely; reach Superset with:
 
 ```bash
-kubectl port-forward svc/superset-superset 8088:8088 -n superset
+kubectl port-forward svc/superset 8088:8088 -n superset
 ```
+
+The service is named after the release, and because the release name `superset` already
+contains the upstream chart name the two do not get concatenated. `make up-standalone`
+prints `svc/superset-superset`, which does not exist.
 
 ## What `make up` actually does
 
@@ -71,9 +98,20 @@ make logs    # tail Superset logs
 ```
 
 `make test` prints the `SecurityPolicy` check too. With the pack's default
-`enforceAtGateway: false` there should be **none** — the target reports "No SecurityPolicy
+`enforceAtGateway: false` there should be **none**: the target reports "No SecurityPolicy
 found", which is the correct result, not a failure. Superset owns its own OAuth flow; see
 [Keycloak OAuth](/oauth/).
+
+Its `HTTPRoute` check comes back empty for the same reason the printed URL does not work,
+so treat that as expected unless you added the routing flags above. The `NebariApp` itself
+records why:
+
+```bash
+kubectl -n superset get nebariapp -o json \
+  | jq '.items[] | {name: .metadata.name, conditions: .status.conditions}'
+```
+
+Look for `RoutingReady: False` with reason `RoutingNotConfigured`.
 
 After a chart edit, re-run the deploy step:
 
@@ -94,8 +132,12 @@ is left behind — remove it by hand if it bothers you.
 
 ## What local development cannot tell you
 
-- **Real TLS.** The dev stack issues certificates locally; a public ACME issuer behaves
-  differently, and DNS validation is not exercised at all.
+- **TLS.** The dev stack never issues a certificate for Superset. The operator only creates
+  one when it is started with `TLS_CLUSTER_ISSUER_NAME` set, and the dev manifests set only
+  the `KEYCLOAK_*` variables, so TLS falls back to the shared gateway listener. That
+  listener's cert covers `*.nebari.local`, which does not match the default
+  `superset.localhost`. Certificate issuance and ACME DNS validation are not exercised here
+  at all.
 - **The Argo CD secret-key rotation.** It only appears under Argo CD, and the dev stack
   installs with Helm. Read [Secret key](/secret-key/) before deploying through GitOps.
 - **Your identity provider.** The dev Keycloak has a seeded realm; group and role names in
@@ -103,14 +145,22 @@ is left behind — remove it by hand if it bothers you.
 
 ## Docs site
 
+Pages live in `docs/src/content/docs/`; the sidebar is in `docs/astro.config.mjs`. Merges to
+`main` publish to [packs.nebari.dev/superset-pack/](https://packs.nebari.dev/superset-pack/),
+and pull requests touching `docs/` get a preview URL posted as a comment.
+
 ```bash
 cd docs
 npm ci
 npm run dev     # hot reload at http://localhost:4321
-npm run build   # static build into docs/dist/
-npm test        # unit tests
 ```
 
-Pages live in `docs/src/content/docs/`; the sidebar is in `docs/astro.config.mjs`. Merges to
-`main` publish to [packs.nebari.dev/superset-pack/](https://packs.nebari.dev/superset-pack/),
-and pull requests touching `docs/` get a preview URL posted as a comment.
+Before pushing, run what CI runs:
+
+```bash
+npm test && npm run build
+bash ../scripts/check-links.sh
+```
+
+[`docs/README.md`](https://github.com/nebari-dev/superset-pack/blob/main/docs/README.md) has
+the rest, including `npm run preview` and checking links against the production base path.
