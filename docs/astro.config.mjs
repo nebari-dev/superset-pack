@@ -23,9 +23,15 @@ export default defineConfig({
       title: 'Nebari Superset Pack',
       description: 'Apache Superset dashboards and SQL exploration with Keycloak OAuth and NebariApp routing. Also installs standalone on non-Nebari clusters.',
       // Shared Nebari identity (brand colors, fonts, logo, favicon, footer, and
-      // GitHub social link) comes from the @nebari/starlight theme plugin. On the
-      // portal the header logo returns users to the pack catalog.
-      plugins: [nebari({ logoHref: 'https://packs.nebari.dev/' })],
+      // GitHub social link) comes from the @nebari/starlight theme plugin. The
+      // header logo returns users to the pack catalog and the GitHub icon
+      // opens this pack's repository.
+      plugins: [
+        nebari({
+          logoHref: 'https://packs.nebari.dev/',
+          githubHref: 'https://github.com/nebari-dev/superset-pack',
+        }),
+      ],
       editLink: {
         // Starlight appends the source path (src/content/docs/<file>.md) to this
         // base, so it must point at the Astro project root inside the repo.
