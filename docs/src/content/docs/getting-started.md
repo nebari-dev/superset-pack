@@ -44,25 +44,9 @@ unlabeled namespaces, silently.
 | `superset.supersetNode.connections.*` | your external PostgreSQL, or switch to the bundled one |
 | `superset.extraEnvRaw[].secretKeyRef.name` | `<release>-nebari-superset-oidc-client` for your release name |
 
-And add a `routing` block — see below.
-
-:::caution[Add `nebariapp.routing`]
-The chart leaves `routing` unset by default, and the operator only creates an HTTPRoute
-and a TLS certificate when it is present. Without it you get a `NebariApp` that reconciles
-cleanly and a hostname that resolves to nothing.
-
-```yaml
-nebariapp:
-  routing:
-    tls:
-      enabled: true
-    routes:
-      - pathPrefix: /
-        pathType: PathPrefix
-```
-
-`examples/argocd-app.yaml` includes this block; `examples/nebari-values.yaml` does not.
-:::
+The example includes the required `nebariapp.routing` block. Retain it when creating
+custom values; omitting it prevents the operator from creating an HTTPRoute and TLS
+certificate.
 
 ## What gets deployed
 
