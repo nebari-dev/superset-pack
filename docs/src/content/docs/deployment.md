@@ -53,11 +53,6 @@ kubectl -n superset get httproute,certificate
 `RoutingReady: False`, reason `RoutingNotConfigured`, is the operator saying the block is
 missing. Check that before the hostname or DNS.
 
-:::caution[`examples/nebari-values.yaml` omits the routing block]
-`examples/argocd-app.yaml` includes it. Copy the block from there when starting from the
-Helm example.
-:::
-
 ## Gateway selection
 
 ```yaml
